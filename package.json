@@ -1,0 +1,9 @@
+{
+  "name": "logic-formula-solver-github-pages",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static GitHub Pages build of the logic formula solver using JavaScript and Tau Prolog.",
+  "scripts": {
+    "check": "node --check static/logic-engine.js && node --check static/prolog-runtime.js && node --check static/app-static.js"
+  }
+}

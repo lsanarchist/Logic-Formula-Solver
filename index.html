@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logic Formula Solver</title>
+    <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+    <script>
+      (function () {
+        var theme = "system";
+        try { theme = localStorage.getItem("logic-theme") || "system"; } catch (error) { theme = "system"; }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <link rel="stylesheet" href="static/styles.css">
+    <script defer src="static/theme.js"></script>
+    <script defer src="vendor/tau-prolog/core.js"></script>
+    <script defer src="static/logic-engine.js"></script>
+    <script defer src="static/prolog-runtime.js"></script>
+    <script defer src="static/shortcut-autocomplete.js"></script>
+    <script defer src="static/karnaugh-map.js"></script>
+    <script defer src="static/formula-tree.js"></script>
+    <script defer src="static/help-panel.js"></script>
+    <script defer src="static/app-static.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">LPI 2026</p>
+          <h1>Logic Formula Solver</h1>
+        </div>
+        <div class="top-actions">
+          <div class="status-pill" id="status-pill">Static JS</div>
+          <div class="top-buttons">
+            <div class="theme-switcher" role="group" aria-label="Theme">
+              <button type="button" class="theme-choice" data-theme-choice="system">System</button>
+              <button type="button" class="theme-choice" data-theme-choice="light">Light</button>
+              <button type="button" class="theme-choice" data-theme-choice="dark">Dark</button>
+            </div>
+            <button type="button" id="help-tab-btn" class="help-btn" aria-controls="help-panel" aria-expanded="false">Help</button>
+          </div>
+        </div>
+      </header>
+
+      <form class="workspace" id="workspace" action="#" novalidate>
+        <section class="input-band" aria-label="Formula input">
+          <div class="logic-tabs" role="tablist" aria-label="Logic mode">
+            <button type="button" data-logic-mode="propositional" class="logic-tab active" role="tab" aria-selected="true">Propositional logic</button>
+            <button type="button" data-logic-mode="predicate" class="logic-tab" role="tab" aria-selected="false">Predicate logic</button>
+          </div>
+
+          <div class="formula-row">
+            <label for="formula">Formula</label>
+            <input id="formula" name="formula" type="text" autocomplete="off" spellcheck="false" placeholder="A -> B">
+            <button class="secondary-action" id="random-formula" type="button">Random</button>
+          </div>
+
+          <div class="formula-row compare-row" id="compare-row" hidden>
+            <label for="formula_b">Compare</label>
+            <input id="formula_b" name="formula_b" type="text" autocomplete="off" spellcheck="false" placeholder="¬A ∨ B">
+          </div>
+
+          <div class="action-grid" id="action-grid" aria-label="Formula actions"></div>
+        </section>
+      </form>
+
+      <script id="shortcut-data" type="application/json">[
+        {"symbol":"⇒","command":"\\Rightarrow","aliases":["→","⇒","->"],"kind":"connective","triggers":["/imp","/to","/implies","/rightarrow","\\Rightarrow"]},
+        {"symbol":"⇔","command":"\\Leftrightarrow","aliases":["⇔","<->","iff"],"kind":"connective","triggers":["/iff","/equiv","/leftrightarrow","\\Leftrightarrow"]},
+        {"symbol":"∨","command":"\\lor","aliases":["|","or"],"kind":"connective","triggers":["/lor","/vee","\\lor"]},
+        {"symbol":"∧","command":"\\land","aliases":["&","and"],"kind":"connective","triggers":["/land","/wedge","\\land"]},
+        {"symbol":"¬","command":"\\neg","aliases":["!","~"],"kind":"negation","triggers":["/neg","/not","\\neg"]},
+        {"symbol":"∀","command":"\\forall","aliases":["forall","ALL"],"kind":"quantifier","triggers":["/forall","\\forall"]},
+        {"symbol":"∃","command":"\\exists","aliases":["exists","EX"],"kind":"quantifier","triggers":["/exists","\\exists"]},
+        {"symbol":"⊤","command":"\\top","aliases":["true","verum"],"kind":"constant","triggers":["/top","\\top","/verum","\\verum"]},
+        {"symbol":"⊥","command":"\\bot","aliases":["false","absurdum"],"kind":"constant","triggers":["/bot","\\bot","/absurdum","\\absurdum"]}
+      ]</script>
+
+      <section class="help-panel" id="help-panel" hidden aria-label="Help">
+        <div class="result-head">
+          <p class="eyebrow">Help</p>
+          <h2>Help and Tips</h2>
+        </div>
+
+        <div class="result-section">
+          <h3>Symbols and notation</h3>
+          <p class="muted-line">Type <code class="help-inline-code">/</code> or <code class="help-inline-code">\</code> in the formula field to open autocomplete.</p>
+          <div class="table-wrap" style="margin-top:12px">
+            <table>
+              <thead>
+                <tr><th>Symbol</th><th>Command</th><th>Aliases</th><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="help-symbol">¬</td><td><code class="help-inline-code">\neg</code></td><td><code class="help-inline-code">!</code> <code class="help-inline-code">~</code></td><td>Negation</td></tr>
+                <tr><td class="help-symbol">∧</td><td><code class="help-inline-code">\land</code></td><td><code class="help-inline-code">&amp;</code> <code class="help-inline-code">and</code></td><td>Conjunction</td></tr>
+                <tr><td class="help-symbol">∨</td><td><code class="help-inline-code">\lor</code></td><td><code class="help-inline-code">|</code> <code class="help-inline-code">or</code></td><td>Disjunction</td></tr>
+                <tr><td class="help-symbol">⇒</td><td><code class="help-inline-code">\Rightarrow</code></td><td><code class="help-inline-code">-&gt;</code> <code class="help-inline-code">→</code></td><td>Implication</td></tr>
+                <tr><td class="help-symbol">⇔</td><td><code class="help-inline-code">\Leftrightarrow</code></td><td><code class="help-inline-code">&lt;-&gt;</code> <code class="help-inline-code">iff</code></td><td>Equivalence</td></tr>
+                <tr><td class="help-symbol">∀</td><td><code class="help-inline-code">\forall</code></td><td><code class="help-inline-code">forall</code> <code class="help-inline-code">ALL</code></td><td>Universal quantifier</td></tr>
+                <tr><td class="help-symbol">∃</td><td><code class="help-inline-code">\exists</code></td><td><code class="help-inline-code">exists</code> <code class="help-inline-code">EX</code></td><td>Existential quantifier</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="result-section">
+          <h3>Examples</h3>
+          <div class="help-tips">
+            <div class="help-tip"><span class="help-tip-label">Propositional</span><p><code class="help-inline-code">A -> B</code>, <code class="help-inline-code">(A &amp; B) | C</code>, <code class="help-inline-code">~A &lt;-&gt; B</code></p></div>
+            <div class="help-tip"><span class="help-tip-label">Predicate</span><p><code class="help-inline-code">forall x. (P(x) -> exists y. Q(y))</code></p></div>
+            <div class="help-tip"><span class="help-tip-label">GitHub Pages</span><p>This build runs fully in the browser. There is no Flask server and no Python dependency.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="result-root" hidden></section>
+    </main>
+
+    <div id="shortcut-popup" class="shortcut-popup" role="listbox" aria-hidden="true"></div>
+  </body>
+</html>
