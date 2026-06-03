@@ -137,7 +137,7 @@
 
     if (window.LogicPrologRuntime) {
       window.LogicPrologRuntime.smoke().then((ok) => {
-        els.statusPill.textContent = ok ? "Static JS + Tau Prolog" : "Static JS";
+        els.statusPill.textContent = ok ? "Static JS + original Prolog via Tau" : "Static JS";
       });
     }
   }
@@ -274,6 +274,39 @@
     return fallback();
   }
 
+  async function prologCanonicalOrFallback(kind, fallback) {
+    if (window.LogicPrologRuntime?.canonical) {
+      try {
+        return await window.LogicPrologRuntime.canonical(kind, state.formula);
+      } catch (err) {
+        console.warn("Original Prolog canonical fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologMinimalOrFallback(kind, fallback) {
+    if (window.LogicPrologRuntime?.minimal) {
+      try {
+        return await window.LogicPrologRuntime.minimal(kind, state.formula);
+      } catch (err) {
+        console.warn("Original Prolog minimal fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologTseitinOrFallback(fallback) {
+    if (window.LogicPrologRuntime?.tseitin) {
+      try {
+        return await window.LogicPrologRuntime.tseitin(state.formula);
+      } catch (err) {
+        console.warn("Original Prolog Tseitin fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
   async function buildResult(action) {
     const formula = L.normalizeFormulaInput(state.formula);
     const formulaB = L.normalizeFormulaInput(state.formulaB || DEFAULTS.formulaB);
@@ -289,14 +322,14 @@
       }
       if (action === "cnf") return formulaResult("CNF Result", await prologTransformOrFallback("cnf", () => L.cnfFormula(formula)));
       if (action === "dnf") return formulaResult("DNF Result", await prologTransformOrFallback("dnf", () => L.dnfFormula(formula)));
-      if (action === "canonical_cnf") return formulaResult("Canonical CNF Result", L.canonicalCNFFormula(formula));
-      if (action === "canonical_dnf") return formulaResult("Canonical DNF Result", L.canonicalDNFFormula(formula));
+      if (action === "canonical_cnf") return formulaResult("Canonical CNF Result", await prologCanonicalOrFallback("cnf", () => L.canonicalCNFFormula(formula)));
+      if (action === "canonical_dnf") return formulaResult("Canonical DNF Result", await prologCanonicalOrFallback("dnf", () => L.canonicalDNFFormula(formula)));
       if (action === "minimal_cnf") {
-        const formulaText = L.minimalCNFFormula(formula);
+        const formulaText = await prologMinimalOrFallback("cnf", () => L.minimalCNFFormula(formula));
         return { kind: "normal_form", title: "Minimal CNF Result", formula: formulaText, normal_form: "cnf", ...L.normalFormDetails(formulaText, "cnf", formula) };
       }
       if (action === "minimal_dnf") {
-        const formulaText = L.minimalDNFFormula(formula);
+        const formulaText = await prologMinimalOrFallback("dnf", () => L.minimalDNFFormula(formula));
         return { kind: "normal_form", title: "Minimal DNF Result", formula: formulaText, normal_form: "dnf", ...L.normalFormDetails(formulaText, "dnf", formula) };
       }
       if (action === "truth_table") {
@@ -309,7 +342,8 @@
       }
       if (action === "tree") return { kind: "tree", title: "Formula Tree", tree: L.formulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
       if (action === "tseitin") {
-        const [tree, fullFormula, nodeInfo] = L.tseitinTransform(formula);
+        const [tree, fallbackFormula, nodeInfo] = L.tseitinTransform(formula);
+        const fullFormula = await prologTseitinOrFallback(() => fallbackFormula);
         return { kind: "tseitin", title: "Tseitin Transformation", formula: fullFormula, clauses: L.splitTopLevelConjunction(fullFormula), tree, legend_variant: "tseitin", node_info: nodeInfo, show_info_panel: true };
       }
     } else {

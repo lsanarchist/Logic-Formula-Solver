@@ -4,7 +4,7 @@ Logic Formula Solver is a static web application for working with propositional 
 
 Live GitHub Pages site: <https://lsanarchist.github.io/Logic-Formula-Solver/>
 
-The repository also keeps the original Prolog files in `prolog/original/`, but the active browser version is implemented in JavaScript.
+The browser app uses JavaScript for the interface, parsing, visualization, and fallbacks. It also loads compatible rules from `prolog/original/` through Tau Prolog for core propositional transformations.
 
 ## Features
 
@@ -81,17 +81,18 @@ It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`,
 - `index.html` - application entry point;
 - `static/app-static.js` - UI state and action handling;
 - `static/logic-engine.js` - parser, normal forms, truth tables, equivalence checks, minimization, prenex form, Skolemization, and Tseitin transformation;
-- `static/prolog-runtime.js` - Tau Prolog integration for browser-side CNF/DNF transformations;
+- `static/prolog-runtime.js` - Tau Prolog integration that loads compatible source files from `prolog/original/`;
 - `static/formula-tree.js` - formula tree rendering;
 - `static/karnaugh-map.js` - Karnaugh map rendering;
 - `static/shortcut-autocomplete.js` - logical symbol autocomplete;
 - `static/theme.js` and `static/styles.css` - theme handling and interface styles;
 - `vendor/tau-prolog/core.js` - vendored Tau Prolog runtime;
-- `prolog/original/` - original Prolog modules kept as reference material.
+- `prolog/original/` - original Prolog modules used where they are compatible with the browser runtime, and kept as reference for the remaining logic.
 
 ## Browser Notes
 
-- CNF/DNF transformations are attempted through Tau Prolog in the browser; if it is unavailable, the JavaScript implementation is used as a fallback.
+- CNF/DNF, canonical CNF/DNF, minimal CNF/DNF, and Tseitin clause generation are attempted through Tau Prolog using compatible files from `prolog/original/`; if that runtime is unavailable, the JavaScript implementation is used as a fallback.
+- On GitHub Pages, the original `.pl` files are loaded with browser `fetch`; when opening `index.html` through `file://`, a browser may block those file requests and the app will use JavaScript fallbacks.
 - Expensive operations show a browser warning before they continue:
   - minimal CNF/DNF above 10 variables;
   - truth-table MDNF/MCNF details above 10 variables;
