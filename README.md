@@ -104,3 +104,4 @@ It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`,
 
 ## TODO
 mention authors...
+parser.pl is not working in Tau Prolog.
