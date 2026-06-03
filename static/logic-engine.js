@@ -308,11 +308,11 @@
   }
 
   function bitPatterns(n) {
-    const total = 1 << n;
+    const total = 2 ** n;
     const rows = [];
     for (let i = 0; i < total; i += 1) {
       const row = [];
-      for (let shift = n - 1; shift >= 0; shift -= 1) row.push((i >> shift) & 1);
+      for (let shift = n - 1; shift >= 0; shift -= 1) row.push(Math.floor(i / (2 ** shift)) % 2);
       rows.push(row);
     }
     return rows;
@@ -522,7 +522,6 @@
 
   function minimalDNFExpr(expr) {
     const vars = variablesOf(expr);
-    if (vars.length > 10) throw new Error("Minimal DNF is limited to 10 variables in the browser build to avoid freezing the page.");
     const rows = bitPatterns(vars.length);
     const target = rows.filter((bits) => evalExpr(expr, assignmentFromBits(vars, bits)));
     const nonTarget = rows.filter((bits) => !evalExpr(expr, assignmentFromBits(vars, bits)));
@@ -531,7 +530,6 @@
 
   function minimalCNFExpr(expr) {
     const vars = variablesOf(expr);
-    if (vars.length > 10) throw new Error("Minimal CNF is limited to 10 variables in the browser build to avoid freezing the page.");
     const rows = bitPatterns(vars.length);
     const target = rows.filter((bits) => !evalExpr(expr, assignmentFromBits(vars, bits)));
     const nonTarget = rows.filter((bits) => evalExpr(expr, assignmentFromBits(vars, bits)));
@@ -628,13 +626,12 @@
   }
 
   function grayCodeTuples(n) {
-    if (n === 0) return [[]];
-    const rows = [];
-    for (let value = 0; value < (1 << n); value += 1) {
-      const gray = value ^ (value >> 1);
-      const bits = [];
-      for (let shift = n - 1; shift >= 0; shift -= 1) bits.push(Boolean((gray >> shift) & 1));
-      rows.push(bits);
+    let rows = [[]];
+    for (let i = 0; i < n; i += 1) {
+      rows = [
+        ...rows.map((bits) => [false, ...bits]),
+        ...rows.slice().reverse().map((bits) => [true, ...bits])
+      ];
     }
     return rows;
   }
@@ -701,7 +698,6 @@
     let variables = variablesOf(expr);
     if (!variables.length && sourceFormula) variables = variablesOf(parseFormula(sourceFormula));
     if (!variables.length) throw new Error("No variables detected in formula.");
-    if (variables.length > 6) throw new Error("Karnaugh maps are currently supported for up to 6 variables.");
     const colCountVars = Math.ceil(variables.length / 2);
     const colVars = variables.slice(0, colCountVars);
     const rowVars = variables.slice(colCountVars);
@@ -758,7 +754,6 @@
   function truthTableBundle(formula) {
     const expr = parseFormula(formula);
     const vars = variablesOf(expr);
-    if (vars.length > 12) throw new Error("Truth table is limited to 12 variables in the browser build.");
     const mdnfExpr = minimalDNFExpr(expr);
     const mcnfExpr = minimalCNFExpr(expr);
     const rows = bitPatterns(vars.length).map((bits) => {
@@ -793,7 +788,6 @@
     const exprA = parseFormula(formulaA);
     const exprB = parseFormula(formulaB);
     const vars = [...new Set([...variablesOf(exprA), ...variablesOf(exprB)])].sort();
-    if (vars.length > 12) throw new Error("Equivalence table is limited to 12 variables in the browser build.");
     const columns = [...vars, "Formula 1", "Formula 2"];
     const rows = bitPatterns(vars.length).map((bits) => {
       const assignment = assignmentFromBits(vars, bits);

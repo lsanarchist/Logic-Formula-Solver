@@ -89,14 +89,15 @@ It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`,
 - `vendor/tau-prolog/core.js` - vendored Tau Prolog runtime;
 - `prolog/original/` - original Prolog modules kept as reference material.
 
-
-
-## Limits
+## Browser Notes
 
 - CNF/DNF transformations are attempted through Tau Prolog in the browser; if it is unavailable, the JavaScript implementation is used as a fallback.
-- Minimal CNF/DNF operations are limited to 10 variables to avoid freezing the browser.
-- Truth tables and equivalence checks are limited to 12 variables.
-- Karnaugh maps are generated for formulas with up to 6 variables.
+- Expensive operations show a browser warning before they continue:
+  - minimal CNF/DNF above 10 variables;
+  - truth-table MDNF/MCNF details above 10 variables;
+  - full truth tables and equivalence checks above 12 variables;
+  - Karnaugh maps above 6 variables.
+- The warning can be accepted, so these operations are still available for larger formulas. Very large formulas may make the browser tab slow or unresponsive.
 
 ## TODO
 mention authors...

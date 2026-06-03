@@ -28,6 +28,12 @@
     predicate: "∀ x. (P(x) ⇒ ∃ y. Q(y))",
     formulaB: "¬A ∨ B"
   };
+  const EXPENSIVE_THRESHOLDS = {
+    minimal: 10,
+    truthTable: 12,
+    equivalence: 12,
+    karnaughMap: 6
+  };
 
   let state = {
     logicMode: "propositional",
@@ -162,6 +168,55 @@
     els.compareRow.hidden = !(state.logicMode === "propositional" && state.activeAction === "equivalence");
   }
 
+  function assignmentCountLabel(variableCount) {
+    const total = 2 ** variableCount;
+    return Number.isSafeInteger(total) ? total.toLocaleString() : `2^${variableCount}`;
+  }
+
+  function variableCountForFormula(formula) {
+    return L.variablesOf(L.parseFormula(L.normalizeFormulaInput(formula))).length;
+  }
+
+  function combinedVariableCount(formulaA, formulaB) {
+    const exprA = L.parseFormula(L.normalizeFormulaInput(formulaA));
+    const exprB = L.parseFormula(L.normalizeFormulaInput(formulaB));
+    return [...new Set([...L.variablesOf(exprA), ...L.variablesOf(exprB)])].length;
+  }
+
+  function confirmExpensiveAction(action) {
+    if (state.logicMode !== "propositional") return true;
+    const warnings = [];
+    try {
+      const formula = els.formula.value;
+      const formulaB = els.formulaB.value || DEFAULTS.formulaB;
+      if (action === "minimal_cnf" || action === "minimal_dnf" || action === "truth_table") {
+        const count = variableCountForFormula(formula);
+        if ((action === "minimal_cnf" || action === "minimal_dnf") && count > EXPENSIVE_THRESHOLDS.minimal) {
+          warnings.push(`Minimal form generation for ${count} variables may inspect up to ${assignmentCountLabel(count)} assignments.`);
+        }
+        if ((action === "minimal_cnf" || action === "minimal_dnf") && count > EXPENSIVE_THRESHOLDS.karnaughMap) {
+          warnings.push(`The Karnaugh map for ${count} variables will contain ${assignmentCountLabel(count)} cells.`);
+        }
+        if (action === "truth_table" && count > EXPENSIVE_THRESHOLDS.truthTable) {
+          warnings.push(`The truth table for ${count} variables will contain ${assignmentCountLabel(count)} rows.`);
+        }
+        if (action === "truth_table" && count > EXPENSIVE_THRESHOLDS.minimal) {
+          warnings.push(`Truth table output also computes MDNF and MCNF, which may be slow for ${count} variables.`);
+        }
+      }
+      if (action === "equivalence") {
+        const count = combinedVariableCount(formula, formulaB);
+        if (count > EXPENSIVE_THRESHOLDS.equivalence) {
+          warnings.push(`The equivalence table for ${count} variables will contain ${assignmentCountLabel(count)} rows.`);
+        }
+      }
+    } catch {
+      return true;
+    }
+    if (!warnings.length) return true;
+    return window.confirm(`Warning: this operation may be slow or freeze the browser tab.\n\n${warnings.join("\n")}\n\nContinue anyway?`);
+  }
+
   function hideResult() {
     els.resultRoot.hidden = true;
     els.resultRoot.innerHTML = "";
@@ -181,6 +236,7 @@
     state.activeAction = action;
     renderActions();
     updateCompareVisibility();
+    if (!confirmExpensiveAction(action)) return;
     setBusy(true);
     showLoading(action);
     try {
