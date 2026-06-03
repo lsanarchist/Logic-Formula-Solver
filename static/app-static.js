@@ -307,6 +307,61 @@
     return fallback();
   }
 
+  async function prologTokensOrFallback(formula, fallback) {
+    if (window.LogicPrologRuntime?.tokenize) {
+      try {
+        return await window.LogicPrologRuntime.tokenize(formula);
+      } catch (err) {
+        console.warn("Original Prolog tokenizer fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologTruthTableOrFallback(formula, fallback) {
+    if (window.LogicPrologRuntime?.truthTableBundle) {
+      try {
+        return await window.LogicPrologRuntime.truthTableBundle(formula);
+      } catch (err) {
+        console.warn("Original Prolog truth-table fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologEquivalenceOrFallback(formulaA, formulaB, fallback) {
+    if (window.LogicPrologRuntime?.equivalence) {
+      try {
+        return await window.LogicPrologRuntime.equivalence(formulaA, formulaB);
+      } catch (err) {
+        console.warn("Original Prolog equivalence fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologPrenexOrFallback(formula, fallback) {
+    if (window.LogicPrologRuntime?.prenex) {
+      try {
+        return await window.LogicPrologRuntime.prenex(formula);
+      } catch (err) {
+        console.warn("Original Prolog prenex fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
+  async function prologSkolemOrFallback(formula, fallback) {
+    if (window.LogicPrologRuntime?.skolemSteps) {
+      try {
+        return await window.LogicPrologRuntime.skolemSteps(formula);
+      } catch (err) {
+        console.warn("Original Prolog Skolem fallback used:", err);
+      }
+    }
+    return fallback();
+  }
+
   async function buildResult(action) {
     const formula = L.normalizeFormulaInput(state.formula);
     const formulaB = L.normalizeFormulaInput(state.formulaB || DEFAULTS.formulaB);
@@ -318,7 +373,8 @@
     if (state.logicMode === "propositional") {
       if (action === "analyze") {
         const [tokens, ast] = L.analyzeFormula(formula);
-        return { kind: "sections", title: "Analysis", sections: [{ title: "Tokens", body: tokens }, { title: "AST", body: ast }] };
+        const prologTokens = await prologTokensOrFallback(formula, () => tokens);
+        return { kind: "sections", title: "Analysis", sections: [{ title: "Tokens", body: prologTokens }, { title: "AST", body: ast }] };
       }
       if (action === "cnf") return formulaResult("CNF Result", await prologTransformOrFallback("cnf", () => L.cnfFormula(formula)));
       if (action === "dnf") return formulaResult("DNF Result", await prologTransformOrFallback("dnf", () => L.dnfFormula(formula)));
@@ -333,11 +389,11 @@
         return { kind: "normal_form", title: "Minimal DNF Result", formula: formulaText, normal_form: "dnf", ...L.normalFormDetails(formulaText, "dnf", formula) };
       }
       if (action === "truth_table") {
-        const [rows, mdnf, mcnf, props] = L.truthTableBundle(formula);
+        const [rows, mdnf, mcnf, props] = await prologTruthTableOrFallback(formula, () => L.truthTableBundle(formula));
         return { kind: "truth_table", title: "Truth Table", rows, columns: rows.length ? Object.keys(rows[0]) : [], mdnf, mcnf, props };
       }
       if (action === "equivalence") {
-        const report = L.logicalEquivalenceReport(formula, formulaB);
+        const report = await prologEquivalenceOrFallback(formula, formulaB, () => L.logicalEquivalenceReport(formula, formulaB));
         return { kind: "equivalence", title: "Logical Equivalence", formula_a: formula, formula_b: formulaB, ...report };
       }
       if (action === "tree") return { kind: "tree", title: "Formula Tree", tree: L.formulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
@@ -348,9 +404,9 @@
       }
     } else {
       if (action === "predicate_tree") return { kind: "tree", title: "Predicate Formula Tree", tree: L.predicateFormulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
-      if (action === "prenex") return formulaResult("Prenex Form", L.prenexFormula(formula));
+      if (action === "prenex") return formulaResult("Prenex Form", await prologPrenexOrFallback(formula, () => L.prenexFormula(formula)));
       if (action === "skolem") {
-        const [prenex, skolem] = L.skolemStepsPretty(formula);
+        const [prenex, skolem] = await prologSkolemOrFallback(formula, () => L.skolemStepsPretty(formula));
         const notices = [];
         if (!L.predicateFormulaHasQuantifiers(formula)) notices.push("This formula does not contain quantifiers, so Skolem normal form is trivial here.");
         return { kind: "sections", title: "Skolem Normal Form", sections: [{ title: "Prenex", body: prenex }, { title: "Skolem", body: skolem }], notices };

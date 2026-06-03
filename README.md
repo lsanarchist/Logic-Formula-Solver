@@ -4,7 +4,7 @@ Logic Formula Solver is a static web application for working with propositional 
 
 Live GitHub Pages site: <https://lsanarchist.github.io/Logic-Formula-Solver/>
 
-The browser app uses JavaScript for the interface, parsing, visualization, and fallbacks. It also loads compatible rules from `prolog/original/` through Tau Prolog for core propositional transformations.
+The browser app uses JavaScript for the interface, visualization, parser-safe fallbacks, and GitHub Pages compatibility. It also loads compatible rules from `prolog/original/` through Tau Prolog for the main logic transformations.
 
 ## Features
 
@@ -87,11 +87,13 @@ It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`,
 - `static/shortcut-autocomplete.js` - logical symbol autocomplete;
 - `static/theme.js` and `static/styles.css` - theme handling and interface styles;
 - `vendor/tau-prolog/core.js` - vendored Tau Prolog runtime;
-- `prolog/original/` - original Prolog modules used where they are compatible with the browser runtime, and kept as reference for the remaining logic.
+- `prolog/original/` - original Prolog modules. The GitHub Pages build uses every browser-compatible module from this folder and keeps the remaining SWI-specific files as reference.
 
 ## Browser Notes
 
-- CNF/DNF, canonical CNF/DNF, minimal CNF/DNF, and Tseitin clause generation are attempted through Tau Prolog using compatible files from `prolog/original/`; if that runtime is unavailable, the JavaScript implementation is used as a fallback.
+- The GitHub Pages build attempts to use original Prolog through Tau Prolog for tokenization, CNF/DNF, canonical CNF/DNF, minimal CNF/DNF, truth tables, equivalence checks, Tseitin clause generation, prenex form, and Skolem form.
+- The original parser and GUI files are not used as the browser runtime path: the DCG parser hangs in the bundled Tau Prolog core, and `gui.pl` depends on SWI-Prolog XPCE. JavaScript handles browser-side parsing and visualization for those parts.
+- If Tau Prolog or a compatible `.pl` path is unavailable, the JavaScript implementation is used as a fallback.
 - On GitHub Pages, the original `.pl` files are loaded with browser `fetch`; when opening `index.html` through `file://`, a browser may block those file requests and the app will use JavaScript fallbacks.
 - Expensive operations show a browser warning before they continue:
   - minimal CNF/DNF above 10 variables;
