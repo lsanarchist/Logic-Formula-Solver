@@ -1,58 +1,102 @@
-# Logic Formula Solver — GitHub Pages build
+# Logic Formula Solver
 
-This is a static browser-only rewrite of the original Flask + SWI-Prolog project.
-It is intended to be deployed directly to GitHub Pages without Python, Flask, SWI-Prolog,
-or any server-side process.
+Logic Formula Solver is a static web application for working with propositional and predicate logic formulas. It runs entirely in the browser: no Flask app, Python server, or installed SWI-Prolog runtime is required. You can open it locally as a regular HTML page or deploy it directly to GitHub Pages.
 
-## How to run locally
+Live GitHub Pages site: <https://lsanarchist.github.io/Logic-Formula-Solver/>
 
-Open `index.html` in a browser, or serve this folder with any static server:
+The repository also keeps the original Prolog files in `prolog/original/`, but the active browser version is implemented in JavaScript.
 
-```bash
-python3 -m http.server 8000
+## Features
+
+### Propositional Logic
+
+- formula analysis with tokens and AST output;
+- CNF and DNF conversion;
+- canonical CNF and canonical DNF conversion;
+- minimal CNF and minimal DNF conversion;
+- truth table generation with formula classification;
+- logical equivalence checking for two formulas;
+- formula tree visualization;
+- Tseitin transformation with generated clauses;
+- Karnaugh maps for normal forms;
+- random propositional formula generation.
+
+### Predicate Logic
+
+- predicate formula tree visualization;
+- prenex form conversion;
+- Skolem form conversion.
+
+### Interface
+
+- symbol autocomplete through `/` or `\`;
+- theme switcher: system, light, dark;
+- action buttons and `Enter` key execution.
+
+## Formula Syntax
+
+The app accepts both logical symbols and ASCII aliases.
+
+| Operation | Symbol | Input examples |
+| --- | --- | --- |
+| Negation | `¬` | `¬A`, `~A`, `!A`, `\neg A` |
+| Conjunction | `∧` | `A ∧ B`, `A & B`, `A and B` |
+| Disjunction | `∨` | `A ∨ B`, <code>A &#124; B</code>, `A or B` |
+| Implication | `⇒` | `A ⇒ B`, `A -> B`, `A => B` |
+| Equivalence | `⇔` | `A ⇔ B`, `A <-> B`, `A iff B` |
+| Universal quantifier | `∀` | `∀ x. P(x)`, `forall x. P(x)` |
+| Existential quantifier | `∃` | `∃ x. P(x)`, `exists x. P(x)` |
+| Truth | `⊤` | `⊤`, `true`, `\top` |
+| Falsehood | `⊥` | `⊥`, `false`, `\bot` |
+
+Examples:
+
+```text
+A -> B
+(A & B) | C
+~A <-> B
+forall x. (P(x) -> exists y. Q(y))
 ```
 
-Then open `http://localhost:8000`.
+## Usage
 
-## How to deploy on GitHub Pages
+Use the published GitHub Pages version:
 
-1. Create a repository or use an existing one.
-2. Copy the contents of this folder into the repository root.
-3. Commit and push.
-4. In GitHub, open **Settings → Pages**.
-5. Select deployment from the branch and choose the repository root, or put the files under `docs/` and select `/docs`.
+<https://lsanarchist.github.io/Logic-Formula-Solver/>
 
-## Main files
+For a local preview of the source code, open `index.html` directly in a browser. No local server or build step is required.
 
-- `index.html` — static UI entry point.
-- `static/logic-engine.js` — JavaScript implementation of parsing, normal forms, truth tables,
-  equivalence, minimal forms, predicate prenex/skolem transformations, formula trees, and Tseitin output.
-- `static/prolog-runtime.js` — Tau Prolog bridge used for browser-side Prolog CNF/DNF transformation.
-- `vendor/tau-prolog/core.js` — vendored Tau Prolog browser runtime.
-- `prolog/original/` — original `.pl` source files kept for reference.
+## Code Check
 
-## Feature coverage
+The project has no npm dependencies. Use this command to run syntax checks for the main JavaScript files:
 
-Implemented in the static build:
+```bash
+npm run check
+```
 
-- propositional formula analysis;
-- CNF and DNF;
-- canonical CNF and canonical DNF;
-- minimal CNF and minimal DNF;
-- truth table with classification;
-- logical equivalence check;
-- formula tree visualization;
-- Tseitin transformation;
-- predicate formula tree;
-- prenex form;
-- Skolem form;
-- random propositional formula generation;
-- shortcut autocomplete and theme switching.
+It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`, and `static/app-static.js`.
 
-## Notes and limits
+## Project Structure
 
-- The original SWI-Prolog DCG parser is not consulted directly in the browser build. The static version uses a JavaScript parser for GitHub Pages compatibility.
-- CNF/DNF are attempted through Tau Prolog in the browser; if Tau Prolog is unavailable, the JavaScript implementation is used as fallback.
-- Minimal CNF/DNF are limited to 10 propositional variables to avoid freezing the browser.
-- Truth-table and equivalence operations are limited to 12 propositional variables.
-- Karnaugh maps are shown for formulas with up to 6 variables.
+- `index.html` - application entry point;
+- `static/app-static.js` - UI state and action handling;
+- `static/logic-engine.js` - parser, normal forms, truth tables, equivalence checks, minimization, prenex form, Skolemization, and Tseitin transformation;
+- `static/prolog-runtime.js` - Tau Prolog integration for browser-side CNF/DNF transformations;
+- `static/formula-tree.js` - formula tree rendering;
+- `static/karnaugh-map.js` - Karnaugh map rendering;
+- `static/shortcut-autocomplete.js` - logical symbol autocomplete;
+- `static/theme.js` and `static/styles.css` - theme handling and interface styles;
+- `vendor/tau-prolog/core.js` - vendored Tau Prolog runtime;
+- `prolog/original/` - original Prolog modules kept as reference material.
+
+
+
+## Limits
+
+- CNF/DNF transformations are attempted through Tau Prolog in the browser; if it is unavailable, the JavaScript implementation is used as a fallback.
+- Minimal CNF/DNF operations are limited to 10 variables to avoid freezing the browser.
+- Truth tables and equivalence checks are limited to 12 variables.
+- Karnaugh maps are generated for formulas with up to 6 variables.
+
+## TODO
+mention authors...
