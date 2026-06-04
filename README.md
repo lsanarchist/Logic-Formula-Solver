@@ -95,6 +95,7 @@ It runs `node --check` for `static/logic-engine.js`, `static/prolog-runtime.js`,
 - The original parser and GUI files are not used as the browser runtime path: the DCG parser hangs in the bundled Tau Prolog core, and `gui.pl` depends on SWI-Prolog XPCE. JavaScript handles browser-side parsing and visualization for those parts.
 - If Tau Prolog or a compatible `.pl` path is unavailable, the JavaScript implementation is used as a fallback.
 - On GitHub Pages, the original `.pl` files are loaded with browser `fetch`; when opening `index.html` through `file://`, a browser may block those file requests and the app will use JavaScript fallbacks.
+- The current execution source is shown in the UI: each result includes a `Source:` notice, and the top status pill changes to `Original Prolog via Tau`, `JavaScript fallback`, or `JavaScript`.
 - Expensive operations show a browser warning before they continue:
   - minimal CNF/DNF above 10 variables;
   - truth-table MDNF/MCNF details above 10 variables;

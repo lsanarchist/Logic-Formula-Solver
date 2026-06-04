@@ -218,6 +218,18 @@ h3 {
   margin-bottom: 6px;
 }
 
+.status-pill[data-runtime="prolog"] {
+  color: var(--accent-strong);
+}
+
+.status-pill[data-runtime="fallback"] {
+  color: var(--amber);
+}
+
+.status-pill[data-runtime="javascript"] {
+  color: var(--muted);
+}
+
 .help-btn {
   flex: 0 0 auto;
   border: 1px solid var(--line);
@@ -527,6 +539,23 @@ h3 {
 .notice.error {
   color: var(--rose);
   background: color-mix(in srgb, var(--panel), var(--rose) 8%);
+}
+
+.runtime-notice {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: var(--muted);
+  background: var(--panel-strong);
+}
+
+.runtime-prolog {
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--panel), var(--accent) 8%);
+}
+
+.runtime-fallback {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--panel), var(--amber) 8%);
 }
 
 .metric-strip {

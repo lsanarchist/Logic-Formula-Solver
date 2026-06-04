@@ -40,7 +40,8 @@
     activeAction: null,
     formula: DEFAULTS.propositional,
     formulaB: DEFAULTS.formulaB,
-    busy: false
+    busy: false,
+    runtimeSource: { kind: "unknown", label: "Not run yet", detail: "" }
   };
 
   const els = {};
@@ -84,6 +85,37 @@
     return `<script type="application/json" class="${className}">${json}</script>`;
   }
 
+  function errorText(err) {
+    return err?.message || String(err || "Unknown error");
+  }
+
+  function runtimeLabel(kind) {
+    if (kind === "prolog") return "Original Prolog via Tau";
+    if (kind === "fallback") return "JavaScript fallback";
+    if (kind === "javascript") return "JavaScript";
+    return "Runtime not checked";
+  }
+
+  function setRuntimeSource(kind, detail = "") {
+    state.runtimeSource = { kind, label: runtimeLabel(kind), detail };
+    updateRuntimeStatus();
+  }
+
+  function updateRuntimeStatus() {
+    if (!els.statusPill) return;
+    const source = state.runtimeSource || {};
+    els.statusPill.textContent = source.label || "Runtime not checked";
+    els.statusPill.dataset.runtime = source.kind || "unknown";
+    els.statusPill.title = source.detail || "";
+  }
+
+  function renderRuntimeNotice() {
+    const source = state.runtimeSource;
+    if (!source || source.kind === "unknown") return "";
+    const detail = source.detail ? ` ${escapeHtml(source.detail)}` : "";
+    return `<div class="notice runtime-notice runtime-${escapeHtml(source.kind)}"><strong>Source:</strong> ${escapeHtml(source.label)}.${detail}</div>`;
+  }
+
   function init() {
     els.formula = $("formula");
     els.formulaB = $("formula_b");
@@ -93,6 +125,7 @@
     els.logicTabs = Array.from(document.querySelectorAll("[data-logic-mode]"));
     els.randomButton = $("random-formula");
     els.statusPill = $("status-pill");
+    els.statusPill.textContent = "Checking Prolog...";
 
     els.formula.value = state.formula;
     els.formulaB.value = state.formulaB;
@@ -137,8 +170,11 @@
 
     if (window.LogicPrologRuntime) {
       window.LogicPrologRuntime.smoke().then((ok) => {
-        els.statusPill.textContent = ok ? "Static JS + original Prolog via Tau" : "Static JS";
+        if (ok) setRuntimeSource("prolog", `Loaded: ${window.LogicPrologRuntime.loadedSource}`);
+        else setRuntimeSource("fallback", window.LogicPrologRuntime.lastError || "Tau Prolog smoke test failed.");
       });
+    } else {
+      setRuntimeSource("fallback", "LogicPrologRuntime is not loaded.");
     }
   }
 
@@ -263,103 +299,59 @@
     `;
   }
 
-  async function prologTransformOrFallback(kind, fallback) {
-    if (window.LogicPrologRuntime) {
-      try {
-        return await window.LogicPrologRuntime.transform(kind, state.formula);
-      } catch (err) {
-        console.warn("Tau Prolog fallback used:", err);
-      }
+  async function prologOrFallback(method, label, call, fallback) {
+    const runtime = window.LogicPrologRuntime;
+    if (!runtime?.[method]) {
+      const detail = `${label}: LogicPrologRuntime.${method} is unavailable.`;
+      setRuntimeSource("fallback", detail);
+      return fallback();
     }
-    return fallback();
+    try {
+      const value = await call(runtime);
+      setRuntimeSource("prolog", `${label}: used ${runtime.loadedSource}.`);
+      return value;
+    } catch (err) {
+      const detail = `${label}: ${errorText(err)}`;
+      console.warn(`${label} fallback used:`, err);
+      setRuntimeSource("fallback", detail);
+      return fallback();
+    }
   }
 
-  async function prologCanonicalOrFallback(kind, fallback) {
-    if (window.LogicPrologRuntime?.canonical) {
-      try {
-        return await window.LogicPrologRuntime.canonical(kind, state.formula);
-      } catch (err) {
-        console.warn("Original Prolog canonical fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologTransformOrFallback(kind, fallback) {
+    return prologOrFallback("transform", `${kind.toUpperCase()} transform`, (runtime) => runtime.transform(kind, state.formula), fallback);
   }
 
-  async function prologMinimalOrFallback(kind, fallback) {
-    if (window.LogicPrologRuntime?.minimal) {
-      try {
-        return await window.LogicPrologRuntime.minimal(kind, state.formula);
-      } catch (err) {
-        console.warn("Original Prolog minimal fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologCanonicalOrFallback(kind, fallback) {
+    return prologOrFallback("canonical", `Canonical ${kind.toUpperCase()}`, (runtime) => runtime.canonical(kind, state.formula), fallback);
   }
 
-  async function prologTseitinOrFallback(fallback) {
-    if (window.LogicPrologRuntime?.tseitin) {
-      try {
-        return await window.LogicPrologRuntime.tseitin(state.formula);
-      } catch (err) {
-        console.warn("Original Prolog Tseitin fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologMinimalOrFallback(kind, fallback) {
+    return prologOrFallback("minimal", `Minimal ${kind.toUpperCase()}`, (runtime) => runtime.minimal(kind, state.formula), fallback);
   }
 
-  async function prologTokensOrFallback(formula, fallback) {
-    if (window.LogicPrologRuntime?.tokenize) {
-      try {
-        return await window.LogicPrologRuntime.tokenize(formula);
-      } catch (err) {
-        console.warn("Original Prolog tokenizer fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologTseitinOrFallback(fallback) {
+    return prologOrFallback("tseitin", "Tseitin", (runtime) => runtime.tseitin(state.formula), fallback);
   }
 
-  async function prologTruthTableOrFallback(formula, fallback) {
-    if (window.LogicPrologRuntime?.truthTableBundle) {
-      try {
-        return await window.LogicPrologRuntime.truthTableBundle(formula);
-      } catch (err) {
-        console.warn("Original Prolog truth-table fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologTokensOrFallback(formula, fallback) {
+    return prologOrFallback("tokenize", "Tokenizer", (runtime) => runtime.tokenize(formula), fallback);
   }
 
-  async function prologEquivalenceOrFallback(formulaA, formulaB, fallback) {
-    if (window.LogicPrologRuntime?.equivalence) {
-      try {
-        return await window.LogicPrologRuntime.equivalence(formulaA, formulaB);
-      } catch (err) {
-        console.warn("Original Prolog equivalence fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologTruthTableOrFallback(formula, fallback) {
+    return prologOrFallback("truthTableBundle", "Truth table", (runtime) => runtime.truthTableBundle(formula), fallback);
   }
 
-  async function prologPrenexOrFallback(formula, fallback) {
-    if (window.LogicPrologRuntime?.prenex) {
-      try {
-        return await window.LogicPrologRuntime.prenex(formula);
-      } catch (err) {
-        console.warn("Original Prolog prenex fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologEquivalenceOrFallback(formulaA, formulaB, fallback) {
+    return prologOrFallback("equivalence", "Equivalence", (runtime) => runtime.equivalence(formulaA, formulaB), fallback);
   }
 
-  async function prologSkolemOrFallback(formula, fallback) {
-    if (window.LogicPrologRuntime?.skolemSteps) {
-      try {
-        return await window.LogicPrologRuntime.skolemSteps(formula);
-      } catch (err) {
-        console.warn("Original Prolog Skolem fallback used:", err);
-      }
-    }
-    return fallback();
+  function prologPrenexOrFallback(formula, fallback) {
+    return prologOrFallback("prenex", "Prenex", (runtime) => runtime.prenex(formula), fallback);
+  }
+
+  function prologSkolemOrFallback(formula, fallback) {
+    return prologOrFallback("skolemSteps", "Skolem", (runtime) => runtime.skolemSteps(formula), fallback);
   }
 
   async function buildResult(action) {
@@ -396,14 +388,20 @@
         const report = await prologEquivalenceOrFallback(formula, formulaB, () => L.logicalEquivalenceReport(formula, formulaB));
         return { kind: "equivalence", title: "Logical Equivalence", formula_a: formula, formula_b: formulaB, ...report };
       }
-      if (action === "tree") return { kind: "tree", title: "Formula Tree", tree: L.formulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
+      if (action === "tree") {
+        setRuntimeSource("javascript", "Formula tree visualization is rendered by browser JavaScript.");
+        return { kind: "tree", title: "Formula Tree", tree: L.formulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
+      }
       if (action === "tseitin") {
         const [tree, fallbackFormula, nodeInfo] = L.tseitinTransform(formula);
         const fullFormula = await prologTseitinOrFallback(() => fallbackFormula);
         return { kind: "tseitin", title: "Tseitin Transformation", formula: fullFormula, clauses: L.splitTopLevelConjunction(fullFormula), tree, legend_variant: "tseitin", node_info: nodeInfo, show_info_panel: true };
       }
     } else {
-      if (action === "predicate_tree") return { kind: "tree", title: "Predicate Formula Tree", tree: L.predicateFormulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
+      if (action === "predicate_tree") {
+        setRuntimeSource("javascript", "Predicate tree visualization is rendered by browser JavaScript.");
+        return { kind: "tree", title: "Predicate Formula Tree", tree: L.predicateFormulaTree(formula), legend_variant: "formula", node_info: {}, show_info_panel: false };
+      }
       if (action === "prenex") return formulaResult("Prenex Form", await prologPrenexOrFallback(formula, () => L.prenexFormula(formula)));
       if (action === "skolem") {
         const [prenex, skolem] = await prologSkolemOrFallback(formula, () => L.skolemStepsPretty(formula));
@@ -439,6 +437,7 @@
           <p class="eyebrow">Result</p>
           <h2>${escapeHtml(result.title)}</h2>
         </div>
+        ${renderRuntimeNotice()}
         ${renderResultBody(result)}
       </section>
     `;
