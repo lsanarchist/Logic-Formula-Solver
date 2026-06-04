@@ -101,6 +101,16 @@
     updateRuntimeStatus();
   }
 
+  function prologFileName(path) {
+    return String(path).split("/").pop();
+  }
+
+  function prologSourceDetail(runtime, method, label) {
+    const files = runtime.filesFor?.(method) || [];
+    if (!files.length) return `${label}: original Prolog files.`;
+    return `${label}: ${files.map(prologFileName).join(", ")}.`;
+  }
+
   function updateRuntimeStatus() {
     if (!els.statusPill) return;
     const source = state.runtimeSource || {};
@@ -170,7 +180,7 @@
 
     if (window.LogicPrologRuntime) {
       window.LogicPrologRuntime.smoke().then((ok) => {
-        if (ok) setRuntimeSource("prolog", `Loaded: ${window.LogicPrologRuntime.loadedSource}`);
+        if (ok) setRuntimeSource("prolog", "Original Prolog runtime is ready.");
         else setRuntimeSource("fallback", window.LogicPrologRuntime.lastError || "Tau Prolog smoke test failed.");
       });
     } else {
@@ -308,7 +318,7 @@
     }
     try {
       const value = await call(runtime);
-      setRuntimeSource("prolog", `${label}: used ${runtime.loadedSource}.`);
+      setRuntimeSource("prolog", prologSourceDetail(runtime, method, label));
       return value;
     } catch (err) {
       const detail = `${label}: ${errorText(err)}`;
@@ -437,8 +447,8 @@
           <p class="eyebrow">Result</p>
           <h2>${escapeHtml(result.title)}</h2>
         </div>
-        ${renderRuntimeNotice()}
         ${renderResultBody(result)}
+        ${renderRuntimeNotice()}
       </section>
     `;
     queueMicrotask(() => {

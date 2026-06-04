@@ -542,20 +542,23 @@ h3 {
 }
 
 .runtime-notice {
-  margin-top: 0;
-  margin-bottom: 18px;
+  margin-top: 18px;
+  margin-bottom: 0;
+  padding: 9px 12px;
   color: var(--muted);
-  background: var(--panel-strong);
+  background: transparent;
+  border: 1px solid var(--line);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .runtime-prolog {
-  color: var(--accent-strong);
-  background: color-mix(in srgb, var(--panel), var(--accent) 8%);
+  color: color-mix(in srgb, var(--accent-strong), var(--text) 20%);
 }
 
 .runtime-fallback {
   color: var(--amber);
-  background: color-mix(in srgb, var(--panel), var(--amber) 8%);
 }
 
 .metric-strip {

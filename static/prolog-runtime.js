@@ -13,6 +13,47 @@
     "prolog/original/skolem.pl"
   ];
 
+  const METHOD_PROLOG_FILES = {
+    transform: [
+      "prolog/original/cnf_dnf_mimi.pl"
+    ],
+    canonical: [
+      "prolog/original/cnf_dnf_mimi.pl",
+      "prolog/original/canonical.pl"
+    ],
+    minimal: [
+      "prolog/original/cnf_dnf_mimi.pl",
+      "prolog/original/canonical.pl",
+      "prolog/original/minimal.pl"
+    ],
+    tseitin: [
+      "prolog/original/tseitin.pl"
+    ],
+    tokenize: [
+      "prolog/original/tokenizer.pl"
+    ],
+    truthTableBundle: [
+      "prolog/original/cnf_dnf_mimi.pl",
+      "prolog/original/canonical.pl",
+      "prolog/original/minimal.pl",
+      "prolog/original/truth_table.pl"
+    ],
+    equivalence: [
+      "prolog/original/cnf_dnf_mimi.pl",
+      "prolog/original/canonical.pl",
+      "prolog/original/minimal.pl",
+      "prolog/original/truth_table.pl",
+      "prolog/original/equivalence.pl"
+    ],
+    prenex: [
+      "prolog/original/prenex.pl"
+    ],
+    skolemSteps: [
+      "prolog/original/prenex.pl",
+      "prolog/original/skolem.pl"
+    ]
+  };
+
   const TAU_COMPAT_PRELUDE = `
   :- dynamic(tau_nb_store/2).
 
@@ -175,6 +216,10 @@
     if (node.op === "forall" || node.op === "exists") return `${node.op}(var(${atom(node.variable)}), ${predicateExprToTerm(node.body)})`;
     if (["and", "or", "imp", "iff"].includes(node.op)) return `${node.op}(${predicateExprToTerm(node.left)}, ${predicateExprToTerm(node.right)})`;
     throw new Error(`Unsupported predicate formula node: ${node.op}`);
+  }
+
+  function filesFor(method) {
+    return METHOD_PROLOG_FILES[method] || [];
   }
 
   function parsePrologData(text) {
@@ -450,6 +495,7 @@
     prenex,
     skolemSteps,
     smoke,
+    filesFor,
     get lastError() { return lastError; },
     get loadedSource() { return loadedSource; }
   };
