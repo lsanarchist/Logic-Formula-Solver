@@ -1,5 +1,7 @@
 # Logic Formula Solver
 
+6-system-na-manipulaciu-s-logickymi-formulami-main.zip - old implementation on Python Flask
+
 Logic Formula Solver is a static web application for working with propositional and predicate logic formulas. It runs entirely in the browser: no Flask app, Python server, or installed SWI-Prolog runtime is required. You can open it locally as a regular HTML page or deploy it directly to GitHub Pages.
 
 Live GitHub Pages site: <https://lsanarchist.github.io/Logic-Formula-Solver/>
